@@ -10,7 +10,7 @@ module OpenStax
       extend self
 
       def user_uuid(request)
-        (decrypt(request) || {}).dig("user", "uuid")
+        (decrypt(request) || {}).dig('sub', 'uuid')
       end
 
       def decrypt(request)
@@ -18,6 +18,12 @@ module OpenStax
         return {} unless cookie.present?
 
         begin
+          # Decoding is the reverse of what accounts does to encode a cookie:
+          # accounts first asymmetric encodes the cookie w/ the signature private
+          # key, then it next symmetric encodes that result w/ the encryption
+          # private key.
+
+          # Step 1:  symmetric decode the cookie with the encryption private key
           encrypted = JSON::JWT.decode(
             cookie,
             encryption_private_key,
@@ -25,16 +31,14 @@ module OpenStax
             encryption_method.to_s
           ).plain_text
 
+          # Step 2:  asymmetric decode the previous step with the signature public key
           JSON::JWT.decode(
             encrypted,
             signature_public_key,
-            signature_algorithm
+            signature_algorithm.to_sym
           )
-        rescue JSON::JWT::Exception, OpenSSL::Cipher::CipherError => ex
+        rescue JSON::JWT::Exception, OpenSSL::Cipher::CipherError
           nil
-        #rescue ActiveSupport::MessageVerifier::InvalidSignature,
-        #  ActiveSupport::MessageEncryptor::InvalidMessage => e
-        #  {}
         end
       end
 
@@ -48,8 +52,7 @@ module OpenStax
       end
       def signature_public_key
         raw_signature_public_key = OpenStax::Auth.configuration.strategy_2_signature_public_key
-        signature_public_key = OpenSSL::PKey::RSA.new raw_signature_public_key \
-          rescue raw_signature_public_key      #use literal key
+        signature_public_key = OpenSSL::PKey::RSA.new raw_signature_public_key
         raise 'Signature public key is not defined' if signature_public_key.blank?
 
         signature_public_key

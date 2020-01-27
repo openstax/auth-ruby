@@ -5,7 +5,7 @@ RSpec.describe OpenStax::Auth::Strategy2 do
   SECRETS = {
     # these values copied from the Accounts secrets
     strategy_2_cookie_name: "oxa",
-    strategy_2_signature_public_key: '-----BEGIN PUBLIC KEY-----\nMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDjvO/E8lO+ZJ7JMglbJyiF5/Ae\nIIS2NKbIAMLBMPVBQY7mSqo6j/yxdVNKZCzYAMDWc/VvEfXQQJ2ipIUuDvO+SOwz\nMewQ70hC71hC4s3dmOSLnixDJlnsVpcnKPEFXloObk/fcpK2Vw27e+yY+kIFmV2X\nzrvTnmm9UJERp6tVTQIDAQAB\n-----END PUBLIC KEY-----\n',
+    strategy_2_signature_public_key: "-----BEGIN PUBLIC KEY-----\nMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDjvO/E8lO+ZJ7JMglbJyiF5/Ae\nIIS2NKbIAMLBMPVBQY7mSqo6j/yxdVNKZCzYAMDWc/VvEfXQQJ2ipIUuDvO+SOwz\nMewQ70hC71hC4s3dmOSLnixDJlnsVpcnKPEFXloObk/fcpK2Vw27e+yY+kIFmV2X\nzrvTnmm9UJERp6tVTQIDAQAB\n-----END PUBLIC KEY-----\n",
     strategy_2_encryption_private_key: 'c6d9b8683fddce8f2a39ac0565cf18ee',
     strategy_2_encryption_algorithm: 'dir',
     strategy_2_encryption_method: 'A256GCM',
@@ -39,20 +39,29 @@ RSpec.describe OpenStax::Auth::Strategy2 do
     )
   end
 
-  it 'decrypts' do
-    expect(described_class.decrypt(mock_request)).to eq(
-                                                       'user' => {
-                                                         "id"=>1,
-                                                         "uuid"=>"0ae414c7-7ea7-40ed-bd6c-7f0e2269d64d",
-                                                         "support_identifier"=>"cs_b5b4c957",
-                                                         "is_test"=>false,
-                                                         "applications"=>[]
-                                                       }
-                                                     )
+  describe "#decrypt" do
+    subject(:decoding) {
+      described_class.decrypt(mock_request)
+    }
+
+    it 'decrypts' do
+      expect(decoding['sub']['uuid']).to eq '0ae414c7-7ea7-40ed-bd6c-7f0e2269d64d'
+      expect(decoding['sub']['is_test']).to be_falsey
+    end
+
+    it 'returns empty on an invalid cookie' do
+      mock_request.cookies['oxa'] = 'bad!'
+      expect(decoding).to be_nil
+    end
   end
 
-  it 'returns empty on an invalid cookie' do
-    mock_request.cookies['ox'] = 'bad!'
-    expect(described_class.decrypt(mock_request)).to eq({})
+  describe "#user_uuid" do
+    subject(:decoding) {
+      described_class.user_uuid(mock_request)
+    }
+
+    it 'finds the user_uuid' do
+      expect(decoding).to eq '0ae414c7-7ea7-40ed-bd6c-7f0e2269d64d'
+    end
   end
 end
