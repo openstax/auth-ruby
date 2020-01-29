@@ -2,11 +2,18 @@ module OpenStax
   module Auth
     class Configuration
 
-      # Settings for strategy 1
-
+      # settings for strategy 1
       attr_accessor :strategy_1_secret_key
       attr_accessor :strategy_1_secret_salt
       attr_accessor :strategy_1_cookie_name
+
+      # settings for strategy 2
+      attr_accessor :strategy_2_signature_public_key
+      attr_accessor :strategy_2_encryption_private_key
+      attr_accessor :strategy_2_cookie_name
+      attr_accessor :strategy_2_encryption_algorithm
+      attr_accessor :strategy_2_encryption_method
+      attr_accessor :strategy_2_signature_algorithm
     end
 
     class << self
