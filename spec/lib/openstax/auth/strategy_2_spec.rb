@@ -2,11 +2,24 @@ require 'spec_helper'
 require 'openstax/auth/strategy_2'
 
 RSpec.describe OpenStax::Auth::Strategy2 do
+
+  SIGNATURE_PUBLIC_KEY = <<~SIGNATURE
+      -----BEGIN PUBLIC KEY-----
+      MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxItufComL1S+j+U2JVr4
+      aeIPyZYJR8S3RcxXjlHgybrAsBf/zyAjJlOBIhVfrm9jUF1HKNMyiTKQehG5XBBW
+      /F8DQT5vGdBd4g9WIAmNU0E+symeF4X+mFIZ6dYwTMKtZxv1U0nkJ8xL2q4jCFVB
+      UMlQRmz9EffSz+fmXr9xGQj80HKahzciM6m2aspX096qUP90155qmLEayE2uhs5C
+      oAUbahA+VXS6ggsCUeVyog5Z1mC086d8r78ylr1y8IQ3aazdJE/mKxfqvu9S423h
+      wNzBP6Fp0n68ZjUdUirqAZEbSrioJgFLEzX8ef7XilTL9dKLSS1w09ErctAF+Tor
+      hwIDAQAB
+      -----END PUBLIC KEY-----
+  SIGNATURE
+
   SECRETS = {
     # these values copied from the Accounts secrets
-    strategy_2_cookie_name: "oxa",
-    strategy_2_signature_public_key: "-----BEGIN PUBLIC KEY-----\nMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDjvO/E8lO+ZJ7JMglbJyiF5/Ae\nIIS2NKbIAMLBMPVBQY7mSqo6j/yxdVNKZCzYAMDWc/VvEfXQQJ2ipIUuDvO+SOwz\nMewQ70hC71hC4s3dmOSLnixDJlnsVpcnKPEFXloObk/fcpK2Vw27e+yY+kIFmV2X\nzrvTnmm9UJERp6tVTQIDAQAB\n-----END PUBLIC KEY-----\n",
-    strategy_2_encryption_private_key: 'c6d9b8683fddce8f2a39ac0565cf18ee',
+    strategy_2_cookie_name: "oxa_dev",
+    strategy_2_signature_public_key: SIGNATURE_PUBLIC_KEY,
+    strategy_2_encryption_private_key: 'RvGHVZ/kvzUAA5Z3t68+FNhuMCJxkzv+',
     strategy_2_encryption_algorithm: 'dir',
     strategy_2_encryption_method: 'A256GCM',
     strategy_2_signature_algorithm: 'RS256'
@@ -21,20 +34,18 @@ RSpec.describe OpenStax::Auth::Strategy2 do
   let(:mock_request) do
     OpenStruct.new(
       cookies: {
-        'oxa' => "eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0..MBdVpgpCI_JWpcgq.ZFf9dxSRH-eNHo8AEFXBX" \
-                 "2j4QsFRxSGMmEfLG8TWjeI1Pbd7UW41PdR2H7ZwOnUG0zoy6BGF-tiNWXad0mFJvkfV1u3mLnZFXJu1" \
-                 "DSn3MXysUSYjQkSkNRCicKEHo_Pio7ksoZ_CticcFWG8QRHJKHAa9vQsyBm09Fnpf3TPWXyOuPUlvM4" \
-                 "hCFVRTmSY3RWPf86ECpj7opVnR7G-Rgm3mB1bsUGVSH16zknaRbs2qXqR_tlpVDSBGD86hnX5cGppmq" \
-                 "g6AOQAncLLpQEVZxWJrJdehxO2ylgF2PK1RmkS6A1q0DGnzFODddMWG_abro7ijpFpd2eumqniDSBSP" \
-                 "QKe7EiMMoa36_YsV0m8L3kD84JgZ0XvQd4q-ZC7vL1RRYUgLCw2Lbd1l6pHNrxGF1rSB_p7KjDVkE1w" \
-                 "pVc5t1wI89TLQJLPYLyejcvVsdKecAijNyrzB396uRHOkpt1Hq5qiTiKDqAkLkCKAG6Lc0bea7hT349" \
-                 "x2ZexGQhHmeBCgS1LphTUef9MU0zD9eOQeF9yWl6DTMf2rW2uS_1XDKDNHXgGE-f1pLVN-vriZevQ1w" \
-                 "X6eN_OpTJs3_w7ugu2deU2Guj5Ggseg05vb7eMnYu8w8Cu7VGG5s3CXwLEzXbbMMf2MOXNVPr_sHZLi" \
-                 "t8WLz8dEXKTu8rvnOgLzCRXQv4q9HEUjQaL3iloBq-use5pSqkS4EqAsOxDWLertWXDfe0fXL-43qzL" \
-                 "rS_ahFtQn7B4YhSvf9fEVaWcvx0st-7y7xIQP5FKVP9LWnTkhMlT2ho-7cS-91LftBn9X2oEEE4z6kD" \
-                 "J1H_CUUizDDpyOrA_R2pdouos1tyhpKSqq7Th6W0Yaz_gleXoJYnX11wOBFBSefXyKgKlxUnK3DnMXa" \
-                 "Wq2g66sxqJzJu6A_fJhKQ_UuiTYOlnEj-akksFGxxqe6rdkS8WmKUqzuHYT6oSKX8xTLuvcXYnVVBhc" \
-                 "3cNijDIkOz9CHB62ZW733Yats4rbhquL2gRUxDYFsxc4RPcX4SfJ4v-.D0xgtTyz6N_gn9hVP9Dw5g"
+        'oxa_dev' =>
+          "eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0..tD56OCg6Un6gzkTy.eQAZrea_ORzHiFvg3rmEjxjmRXlqhXIfOYA55RQP9T" \
+          "uum2S7d-KqFQiNEVHvdOAz8Jt1UULezUllc1bJ42j7IiBlakUm8VlOIhS6n0XtobmuQkIV7nd_0_DNTn2uvmLC70Z9pGtgUOFm3q" \
+          "XtQa5DczQTuoTQ56-_M9uewyIYtj_B0H0bfjDNvsj92hf54K8o486B97qnvfGIkb7jXRUk3q6Aa_NtNIqbmCR9Tac29H9rn7CAcV" \
+          "TG2vzG-kfUwpxrA9A-LlkX4SX1LKzsD3TVQe-05Xv9cQdf8zArdeE_9KJGAdbRlM-DVK3ul2YBTy4z92uxY4cA7vtNsANb1ByNn7" \
+          "K5zEa4Mnb1OcxhhrPKTTkyVWtt4-w8GhmZl48kBoeQTWEEXtRlksabKe5RhHu3-i3dXvbWBp6ALXjEkAoKC-BDDjCUt_IOErp_g0" \
+          "G1CnD3aRU--lqvm2IJnKq1sncTd8qtFTm91MRPzg94O0-OHk7NohktEz3DtJjKeH0EdW98d_mon8OAf4xJDtXrADE-VxAMPhNzoF" \
+          "s6o2k4t3BJpIvUj9AGuAx46vkk7B0TeIAXFy8dhq6n5vvFdYnoih1BM47DnOv5DZtABlvQv5xJTfyN23jb-QDKG-AZ--zjtamtkT" \
+          "r_7GASXqbQy2xEw2QA0yQCUS6JhnRRCcrC913CU8uPtjMbzWoxkCZjCyxQkX1fcVddU9e3pmay9LZ4zZolVCOwWUp1TuEgYwSweN" \
+          "pR4WiwGiWelMhHSZ3QYKjJpGyIkzCSkn7ZQRLLTe0joU43figYs790TPx4waUfwi5r3AED6OSkfxTBsjgOR9DY6083CpCZ4N7lea" \
+          "XhsfepgwjiwzVw5TB4YGRg275AE4lZhdKf1lgS7OSk1S7NeMkv88ZDHnVIVAd0wiR9PZf36Ni48CArfC4btn6DT7cQURQOnQTQyi" \
+          "K-WvFfkEMdWX7_Z-GRG9CCnVIT3CBBZnvoIcCaUbVmXRqv0cFJmvfsmGsA.FJxz84tw7BCYCrwYeqLpdQ" \
       }
     )
   end
@@ -45,12 +56,12 @@ RSpec.describe OpenStax::Auth::Strategy2 do
     }
 
     it 'decrypts' do
-      expect(decoding['sub']['uuid']).to eq '0ae414c7-7ea7-40ed-bd6c-7f0e2269d64d'
+      expect(decoding['sub']['uuid']).to eq '1b2dc73a-a792-462b-9b0f-59bd22bac26d'
       expect(decoding['sub']['is_test']).to be_falsey
     end
 
     it 'returns empty on an invalid cookie' do
-      mock_request.cookies['oxa'] = 'bad!'
+      mock_request.cookies['oxa_dev'] = 'bad!'
       expect(decoding).to be_nil
     end
   end
@@ -61,7 +72,7 @@ RSpec.describe OpenStax::Auth::Strategy2 do
     }
 
     it 'finds the user_uuid' do
-      expect(decoding).to eq '0ae414c7-7ea7-40ed-bd6c-7f0e2269d64d'
+      expect(decoding).to eq '1b2dc73a-a792-462b-9b0f-59bd22bac26d'
     end
   end
 end
