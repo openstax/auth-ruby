@@ -17,17 +17,17 @@ RSpec.describe OpenStax::Auth::Strategy2 do
 
   SECRETS = {
     # these values copied from the Accounts secrets
-    strategy_2_cookie_name: "oxa_dev",
-    strategy_2_signature_public_key: SIGNATURE_PUBLIC_KEY,
-    strategy_2_encryption_private_key: 'RvGHVZ/kvzUAA5Z3t68+FNhuMCJxkzv+',
-    strategy_2_encryption_algorithm: 'dir',
-    strategy_2_encryption_method: 'A256GCM',
-    strategy_2_signature_algorithm: 'RS256'
+    cookie_name: "oxa_dev",
+    signature_public_key: SIGNATURE_PUBLIC_KEY,
+    encryption_private_key: 'RvGHVZ/kvzUAA5Z3t68+FNhuMCJxkzv+',
+    encryption_algorithm: 'dir',
+    encryption_method: 'A256GCM',
+    signature_algorithm: 'RS256'
   }
 
   before(:each) do
     SECRETS.each do |name, value|
-      allow(OpenStax::Auth.configuration).to receive(name).and_return(value)
+      OpenStax::Auth.configuration.strategy2.send("#{name}=", value)
     end
   end
 

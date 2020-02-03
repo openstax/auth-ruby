@@ -5,14 +5,14 @@ RSpec.describe OpenStax::Auth::Strategy1 do
 
   SECRETS = {
     # these values copied from the Accounts development env values
-    strategy_1_cookie_name: "ox",
-    strategy_1_secret_salt: "ox-shared-salt",
-    strategy_1_secret_key: "265127c36133669bedcf47f326e64e22623c1be35fffe04199f0d86bf45a3485"
+    cookie_name: "ox",
+    secret_salt: "ox-shared-salt",
+    secret_key: "265127c36133669bedcf47f326e64e22623c1be35fffe04199f0d86bf45a3485"
   }
 
   before(:each) do
     SECRETS.each do |name, value|
-      allow(OpenStax::Auth.configuration).to receive(name).and_return(value)
+      OpenStax::Auth.configuration.strategy1.send("#{name}=", value)
     end
   end
 

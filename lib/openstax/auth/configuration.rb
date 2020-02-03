@@ -1,19 +1,46 @@
 module OpenStax
   module Auth
     class Configuration
+      attr_reader :strategy1
+      attr_reader :strategy2
 
-      # settings for strategy 1
-      attr_accessor :strategy_1_secret_key
-      attr_accessor :strategy_1_secret_salt
-      attr_accessor :strategy_1_cookie_name
+      class ConfigFields
+        def self.attr_accessor(*vars)
+          @@attributes ||= []
+          @@attributes.concat vars
+          super(*vars)
+        end
 
-      # settings for strategy 2
-      attr_accessor :strategy_2_signature_public_key
-      attr_accessor :strategy_2_encryption_private_key
-      attr_accessor :strategy_2_cookie_name
-      attr_accessor :strategy_2_encryption_algorithm
-      attr_accessor :strategy_2_encryption_method
-      attr_accessor :strategy_2_signature_algorithm
+        def initialize
+          @@attributes.each do |v|
+            define_singleton_method(v) do
+              val = instance_variable_get "@#{v.to_s}".to_sym
+              raise "#{v} not set" if val.blank?
+              val
+            end
+          end
+        end
+      end
+
+      class Strategy1 < ConfigFields
+        attr_accessor :secret_key
+        attr_accessor :secret_salt
+        attr_accessor :cookie_name
+      end
+
+      class Strategy2 < ConfigFields
+        attr_accessor :signature_public_key
+        attr_accessor :encryption_private_key
+        attr_accessor :cookie_name
+        attr_accessor :encryption_algorithm
+        attr_accessor :encryption_method
+        attr_accessor :signature_algorithm
+      end
+
+      def initialize
+        @strategy1 = Strategy1.new
+        @strategy2 = Strategy2.new
+      end
     end
 
     class << self
