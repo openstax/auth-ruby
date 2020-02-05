@@ -15,7 +15,7 @@ RSpec.describe OpenStax::Auth::Strategy2 do
       -----END PUBLIC KEY-----
   SIGNATURE
 
-  SECRETS = {
+  SECRETS2 = {
     # these values copied from the Accounts secrets
     cookie_name: "oxa_dev",
     signature_public_key: SIGNATURE_PUBLIC_KEY,
@@ -26,7 +26,7 @@ RSpec.describe OpenStax::Auth::Strategy2 do
   }
 
   before(:each) do
-    SECRETS.each do |name, value|
+    SECRETS2.each do |name, value|
       OpenStax::Auth.configuration.strategy2.send("#{name}=", value)
     end
   end

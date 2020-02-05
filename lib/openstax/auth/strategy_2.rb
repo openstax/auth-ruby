@@ -10,10 +10,11 @@ module OpenStax
 
       delegate :cookie_name,
                :signature_public_key,
+               :signature_algorithm,
                :encryption_private_key,
                :encryption_algorithm,
                :encryption_method,
-        to: :@OpenStax::Auth.configuration
+        to: :configuration
 
       def user_uuid(request)
         (decrypt(request) || {}).dig('sub', 'uuid')
@@ -49,6 +50,10 @@ module OpenStax
       end
 
       private
+
+      def configuration
+        OpenStax::Auth.configuration.strategy2
+      end
 
       def rsa_signature_public_key
         OpenSSL::PKey::RSA.new signature_public_key

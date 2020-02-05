@@ -9,7 +9,7 @@ module OpenStax
       extend self
 
       delegate :cookie_name, :secret_key, :secret_salt,
-               to: :OpenStax::Auth.configuration.strategy1
+               to: :configuration
 
       def user_uuid(request)
         (decrypt(request) || {}).dig("user", "uuid")
@@ -31,6 +31,10 @@ module OpenStax
       end
 
       private
+
+      def configuration
+        OpenStax::Auth.configuration.strategy1
+      end
 
       # Not thread-safe
       def encryptor
