@@ -16,7 +16,8 @@ RSpec.describe OpenStax::Auth::Strategy2 do
   SIGNATURE
 
   SECRETS2 = {
-    # these values copied from the Accounts secrets
+    # These values copied from the Accounts (dev) secrets.  These are not
+    # used in real deployments.
     cookie_name: "oxa_dev",
     signature_public_key: SIGNATURE_PUBLIC_KEY,
     encryption_private_key: 'RvGHVZ/kvzUAA5Z3t68+FNhuMCJxkzv+',
