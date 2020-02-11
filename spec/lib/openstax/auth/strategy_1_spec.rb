@@ -12,7 +12,7 @@ RSpec.describe OpenStax::Auth::Strategy1 do
 
   before(:each) do
     SECRETS.each do |name, value|
-      OpenStax::Auth.configuration.strategy1.send("#{name}=", value)
+      allow(OpenStax::Auth.configuration.strategy1).to receive(name).and_return(value)
     end
   end
 

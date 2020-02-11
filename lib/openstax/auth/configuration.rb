@@ -5,17 +5,12 @@ module OpenStax
       attr_reader :strategy2
 
       class ConfigFields
-        def self.attr_accessor(*vars)
-          @@attributes ||= []
-          @@attributes.concat vars
+        def self.attr_accessor(*vars, required: false)
           super(*vars)
-        end
-
-        def initialize
-          @@attributes.each do |v|
+          vars.each do |v|
             define_singleton_method(v) do
               val = instance_variable_get "@#{v.to_s}".to_sym
-              raise "#{v} not set" if val.blank?
+              raise "#{v} not set" if val.blank? && required
               val
             end
           end
@@ -23,18 +18,18 @@ module OpenStax
       end
 
       class Strategy1 < ConfigFields
-        attr_accessor :secret_key
-        attr_accessor :secret_salt
-        attr_accessor :cookie_name
+        attr_accessor :secret_key, required: true
+        attr_accessor :secret_salt, required: true
+        attr_accessor :cookie_name, required: true
       end
 
       class Strategy2 < ConfigFields
-        attr_accessor :signature_public_key
-        attr_accessor :encryption_private_key
-        attr_accessor :cookie_name
-        attr_accessor :encryption_algorithm
-        attr_accessor :encryption_method
-        attr_accessor :signature_algorithm
+        attr_accessor :signature_public_key, required: true
+        attr_accessor :encryption_private_key, required: true
+        attr_accessor :cookie_name, required: true
+        attr_accessor :encryption_algorithm, required: true
+        attr_accessor :encryption_method, required: true
+        attr_accessor :signature_algorithm, required: true
       end
 
       def initialize

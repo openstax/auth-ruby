@@ -17,8 +17,6 @@ module OpenStax
 
       # https://github.com/rails/rails/blob/4-2-stable/activesupport/lib/active_support/message_encryptor.rb#L90
       def decrypt(request)
-        raise 'OpenStax::Auth strategy_1_cookie_name is not defined' if cookie_name.blank?
-
         cookie = request.cookies[cookie_name]
         return {} unless cookie.present?
 
