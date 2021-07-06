@@ -8,15 +8,15 @@ Gem::Specification.new do |spec|
   spec.authors       = ["JP Slavinsky"]
   spec.email         = ["jps@rice.edu"]
 
-  spec.summary       = %q{Provides utilities to get user information from cookies within OpenStax Rails apps.}
-  spec.description   = %q{Provides utilities to get user information from cookies within OpenStax Rails apps.}
-  spec.homepage      = "https://github.com/openstax/auth-rails"
+  spec.summary       = %q{Provides utilities to get user information from cookies within OpenStax Ruby apps.}
+  spec.description   = %q{Provides utilities to get user information from cookies within OpenStax Ruby apps.}
+  spec.homepage      = "https://github.com/openstax/auth-ruby"
   spec.license       = "MIT"
 
   spec.metadata["allowed_push_host"] = "http://rubygems.org"
 
   spec.metadata["homepage_uri"] = spec.homepage
-  spec.metadata["source_code_uri"] = "https://github.com/openstax/auth-rails"
+  spec.metadata["source_code_uri"] = "https://github.com/openstax/auth-ruby"
 
   # Specify which files should be added to the gem when it is released.
   # The `git ls-files -z` loads the files in the RubyGem that have been added into git.
@@ -25,7 +25,6 @@ Gem::Specification.new do |spec|
   end
   spec.require_paths = ["lib"]
 
-  spec.add_dependency "activesupport"
   spec.add_dependency "json-jwt"
 
   spec.add_development_dependency "bundler", "~> 2.0"
