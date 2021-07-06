@@ -1,7 +1,6 @@
 module OpenStax
   module Auth
     class Configuration
-      attr_reader :strategy1
       attr_reader :strategy2
 
       class ConfigFields
@@ -10,17 +9,11 @@ module OpenStax
           vars.each do |v|
             define_singleton_method(v) do
               val = instance_variable_get "@#{v.to_s}".to_sym
-              raise "#{v} not set" if val.blank? && required
+              raise "#{v} not set" if (val.nil? || val == "") && required
               val
             end
           end
         end
-      end
-
-      class Strategy1 < ConfigFields
-        attr_accessor :secret_key, required: true
-        attr_accessor :secret_salt, required: true
-        attr_accessor :cookie_name, required: true
       end
 
       class Strategy2 < ConfigFields
@@ -33,7 +26,6 @@ module OpenStax
       end
 
       def initialize
-        @strategy1 = Strategy1.new
         @strategy2 = Strategy2.new
       end
     end

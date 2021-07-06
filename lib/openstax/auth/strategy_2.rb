@@ -1,20 +1,19 @@
-require 'json'
 require 'json/jwt'
-require 'active_support/core_ext/object/blank'
+require 'forwardable'
 
 module OpenStax
   module Auth
     module Strategy2
-
+      extend Forwardable
       extend self
 
-      delegate :cookie_name,
-               :signature_public_key,
-               :signature_algorithm,
-               :encryption_private_key,
-               :encryption_algorithm,
-               :encryption_method,
-        to: :configuration
+      def_delegators :configuration,
+                     :cookie_name,
+                     :signature_public_key,
+                     :signature_algorithm,
+                     :encryption_private_key,
+                     :encryption_algorithm,
+                     :encryption_method
 
       def user_uuid(request)
         (decrypt(request) || {}).dig('sub', 'uuid')
@@ -22,7 +21,7 @@ module OpenStax
 
       def decrypt(request)
         cookie = request.cookies[cookie_name]
-        return {} unless cookie.present?
+        return {} unless !cookie.nil? && cookie != ""
 
         begin
           # Decoding is the reverse of what accounts does to encode a cookie:
