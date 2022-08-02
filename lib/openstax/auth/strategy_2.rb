@@ -20,8 +20,10 @@ module OpenStax
       end
 
       def decrypt(request)
-        cookie = request.cookies[cookie_name]
-        return {} unless !cookie.nil? && cookie != ""
+        auth_header = request.headers['Authorization'] || ''
+        cookie = auth_header.start_with?('Bearer ') ?
+          auth_header.sub('Bearer ', '') : request.cookies[cookie_name]
+        return if cookie.nil? || cookie.empty?
 
         begin
           # Decoding is the reverse of what accounts does to encode a cookie:
