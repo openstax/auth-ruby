@@ -21,7 +21,7 @@ module OpenStax
 
       def decrypt(request)
         auth_header = request.headers['Authorization'] || ''
-        cookie = auth_header.start_with? 'Bearer ' ?
+        cookie = auth_header.start_with?('Bearer ') ?
           auth_header.sub('Bearer ', '') : request.cookies[cookie_name]
         return if cookie.nil? || cookie.empty?
 
