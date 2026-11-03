@@ -2,6 +2,7 @@ require 'json/jwt'
 require 'base64'
 require 'net/http'
 require 'uri'
+require 'zlib'
 require 'openstax/auth/configuration'
 
 module OpenStax
@@ -36,7 +37,10 @@ module OpenStax
         SystemCallError,     # ECONNREFUSED and friends
         IOError,
         Timeout::Error,      # includes Net::OpenTimeout and Net::ReadTimeout
-        Net::ProtocolError
+        Net::ProtocolError,
+        Net::HTTPBadResponse,      # malformed status line; not a ProtocolError
+        Net::HTTPHeaderSyntaxError,
+        Zlib::Error                # bad gzip/deflate body
       ].freeze
 
       extend self

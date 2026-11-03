@@ -201,6 +201,13 @@ RSpec.describe OpenStax::Auth::LaunchToken do
         allow(described_class).to receive(:fetch_jwks).and_raise(Net::OpenTimeout)
         expect(described_class.verify(sign(claims))).to be_nil
       end
+
+      [Net::HTTPBadResponse, Net::HTTPHeaderSyntaxError, Zlib::DataError].each do |error|
+        it "returns nil when the JWKS response raises #{error}" do
+          allow(described_class).to receive(:fetch_jwks).and_raise(error)
+          expect(described_class.verify(sign(claims))).to be_nil
+        end
+      end
     end
 
     context 'key caching' do
