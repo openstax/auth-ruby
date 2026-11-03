@@ -358,6 +358,63 @@ RSpec.describe OpenStax::Auth::LaunchToken do
     end
   end
 
+  describe '.fetch_jwks' do
+    let(:http) { instance_double(Net::HTTP) }
+
+    before do
+      allow(described_class).to receive(:fetch_jwks).and_call_original
+      allow(Net::HTTP).to receive(:start).and_yield(http)
+    end
+
+    def response(klass, code, body = nil)
+      klass.new('1.1', code, '').tap do |res|
+        allow(res).to receive(:body).and_return(body)
+      end
+    end
+
+    it 'GETs the JWKS over TLS with the configured timeouts' do
+      allow(http).to receive(:request).and_return(response(Net::HTTPOK, '200', { keys: jwks_keys }.to_json))
+
+      keys = described_class.fetch_jwks(jwks_uri)
+
+      expect(keys.keys).to contain_exactly('key-1', 'ec-key')
+      expect(Net::HTTP).to have_received(:start).with(
+        'assignments.openstax.org', 443,
+        use_ssl: true, open_timeout: config.open_timeout, read_timeout: config.read_timeout
+      )
+      expect(http).to have_received(:request) do |req|
+        expect(req).to be_a(Net::HTTP::Get)
+        expect(req.path).to eq '/.well-known/jwks.json'
+      end
+    end
+
+    it 'returns no keys for an error status' do
+      allow(http).to receive(:request).and_return(response(Net::HTTPInternalServerError, '500', 'oops'))
+      expect(described_class.fetch_jwks(jwks_uri)).to eq({})
+    end
+
+    it 'does not follow redirects' do
+      redirect = response(Net::HTTPFound, '302')
+      redirect['location'] = 'https://evil.example.com/jwks.json'
+      allow(http).to receive(:request).and_return(redirect)
+
+      expect(described_class.fetch_jwks(jwks_uri)).to eq({})
+      expect(Net::HTTP).to have_received(:start).once
+    end
+
+    it 'skips keys without a string kid' do
+      body = { keys: [public_jwk(rsa_key, 'key-1').except('kid'), 'junk'] }.to_json
+      allow(http).to receive(:request).and_return(response(Net::HTTPOK, '200', body))
+      expect(described_class.fetch_jwks(jwks_uri)).to eq({})
+    end
+
+    it 'lets timeouts propagate so verify can return nil' do
+      allow(Net::HTTP).to receive(:start).and_raise(Net::OpenTimeout)
+      expect { described_class.fetch_jwks(jwks_uri) }.to raise_error(Net::OpenTimeout)
+      expect(described_class.verify(sign(claims))).to be_nil
+    end
+  end
+
   describe '.user_uuid' do
     it 'returns sub for a valid token' do
       expect(described_class.user_uuid(request_with(sign(claims)))).to eq uuid
