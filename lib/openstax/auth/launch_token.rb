@@ -99,11 +99,15 @@ module OpenStax
         issuer = URI.parse(iss)
         return nil unless issuer.is_a?(URI::HTTPS) && issuer.host
 
-        # Same as JS `new URL('/.well-known/jwks.json', iss)`
-        jwks_uri = issuer.merge('/.well-known/jwks.json')
-        return nil unless trusted_host?(jwks_uri.host)
+        host = issuer.host.downcase
+        return nil unless trusted_host?(host)
 
-        jwks_uri.to_s
+        # Like JS `new URL('/.well-known/jwks.json', iss)`, but built from the
+        # canonical origin (no userinfo, query or fragment, lowercase host,
+        # default port omitted). Every spelling of an issuer then maps to one
+        # cache key, so varying it can't bypass the miss throttle.
+        port = issuer.port == issuer.default_port ? '' : ":#{issuer.port}"
+        "https://#{host}#{port}/.well-known/jwks.json"
       rescue URI::Error
         nil
       end
@@ -166,6 +170,10 @@ module OpenStax
       #   random kids can't force a fetch on every request.
       class KeyCache
         MAX_ENTRIES = 1000
+        # Fetches are serialized per URI through a fixed pool of mutexes
+        # (striped by URI), so the lock bookkeeping stays bounded however many
+        # distinct issuers requests name.
+        LOCK_STRIPES = 64
 
         def initialize(config, clock: -> { Process.clock_gettime(Process::CLOCK_MONOTONIC) })
           @config = config
@@ -173,7 +181,7 @@ module OpenStax
           @lock = Mutex.new
           @keys = {}          # [jwks_uri, kid] => [jwk, expires_at]
           @fetched_at = {}    # jwks_uri => time of last fetch attempt
-          @uri_locks = {}     # jwks_uri => Mutex
+          @uri_locks = Array.new(LOCK_STRIPES) { Mutex.new }
         end
 
         # Yields the jwks_uri to a block returning { kid => jwk } when a fetch
@@ -191,7 +199,10 @@ module OpenStax
             keys = begin
               yield(jwks_uri) || {}
             ensure
-              @lock.synchronize { @fetched_at[jwks_uri] = now }
+              @lock.synchronize do
+                @fetched_at[jwks_uri] = now
+                prune if @fetched_at.size > MAX_ENTRIES
+              end
             end
             store(jwks_uri, keys)
             lookup(jwks_uri, kid)
@@ -223,7 +234,7 @@ module OpenStax
         end
 
         def uri_lock(jwks_uri)
-          @lock.synchronize { @uri_locks[jwks_uri] ||= Mutex.new }
+          @uri_locks[jwks_uri.hash % LOCK_STRIPES]
         end
 
         # Called with @lock held
@@ -231,7 +242,13 @@ module OpenStax
           time = now
           @keys.delete_if { |_, (_, expires_at)| expires_at <= time }
           @fetched_at.delete_if { |_, fetched_at| time - fetched_at >= @config.jwks_miss_ttl }
-          @keys.clear if @keys.size > MAX_ENTRIES
+          # Still over the cap: keep the newest entries
+          if @fetched_at.size > MAX_ENTRIES
+            @fetched_at = @fetched_at.sort_by { |_, fetched_at| -fetched_at }.first(MAX_ENTRIES).to_h
+          end
+          if @keys.size > MAX_ENTRIES
+            @keys = @keys.sort_by { |_, (_, expires_at)| -expires_at }.first(MAX_ENTRIES).to_h
+          end
         end
 
         def now

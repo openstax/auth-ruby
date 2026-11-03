@@ -259,6 +259,55 @@ RSpec.describe OpenStax::Auth::LaunchToken do
         2.times { expect(described_class.verify(sign(claims))).to be_nil }
         expect(described_class).to have_received(:fetch_jwks).once
       end
+
+      it 'maps issuer spellings to one canonical JWKS URI so they share the miss throttle' do
+        [
+          'https://user1@assignments.openstax.org',
+          'https://user2:pw@ASSIGNMENTS.OpenStax.org:443',
+          'https://assignments.openstax.org/some/path?q=1#frag'
+        ].each do |variant|
+          token = sign(claims.merge(iss: variant), header_iss: variant, kid: 'nope')
+          expect(described_class.verify(token)).to be_nil
+        end
+        expect(described_class).to have_received(:fetch_jwks).once
+        expect(described_class).to have_received(:fetch_jwks).with(jwks_uri)
+      end
+
+      it 'keeps a non-default port in the JWKS URI' do
+        port_iss = 'https://assignments.openstax.org:8443'
+        described_class.verify(sign(claims.merge(iss: port_iss), header_iss: port_iss))
+        expect(described_class).to have_received(:fetch_jwks)
+          .with('https://assignments.openstax.org:8443/.well-known/jwks.json')
+      end
+
+      it 'bounds its bookkeeping when many distinct issuers fail' do
+        stub_const("#{described_class}::KeyCache::MAX_ENTRIES", 5)
+        allow(described_class).to receive(:fetch_jwks).and_raise(SocketError)
+
+        20.times do |i|
+          host_iss = "https://nope-#{i}.openstax.org"
+          described_class.verify(sign(claims.merge(iss: host_iss), header_iss: host_iss))
+        end
+
+        cache = described_class.instance_variable_get(:@key_cache)
+        expect(described_class).to have_received(:fetch_jwks).exactly(20).times
+        expect(cache.instance_variable_get(:@fetched_at).size).to be <= 5
+        expect(cache.instance_variable_get(:@uri_locks).size).to eq described_class::KeyCache::LOCK_STRIPES
+      end
+
+      it 'keeps throttling the newest failures when pruning' do
+        stub_const("#{described_class}::KeyCache::MAX_ENTRIES", 5)
+        allow(described_class).to receive(:fetch_jwks).and_raise(SocketError)
+
+        hosts = (0...8).map { |i| "https://nope-#{i}.openstax.org" }
+        hosts.each do |host_iss|
+          advance(1)
+          described_class.verify(sign(claims.merge(iss: host_iss), header_iss: host_iss))
+        end
+        described_class.verify(sign(claims.merge(iss: hosts.last), header_iss: hosts.last))
+
+        expect(described_class).to have_received(:fetch_jwks).exactly(8).times
+      end
     end
   end
 
