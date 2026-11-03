@@ -276,6 +276,17 @@ RSpec.describe OpenStax::Auth::LaunchToken do
         expect(described_class).to have_received(:fetch_jwks).once
       end
 
+      it 'refetches an expired key even if jwks_miss_ttl is longer than jwks_cache_ttl' do
+        original_miss_ttl = config.jwks_miss_ttl
+        config.jwks_miss_ttl = config.jwks_cache_ttl * 2
+        described_class.verify(sign(claims))
+        advance(config.jwks_cache_ttl + 1)
+        expect(described_class.verify(sign(claims))).to include('sub' => uuid)
+        expect(described_class).to have_received(:fetch_jwks).twice
+      ensure
+        config.jwks_miss_ttl = original_miss_ttl
+      end
+
       it 'maps issuer spellings to one canonical JWKS URI so they share the miss throttle' do
         [
           'https://user1@assignments.openstax.org',

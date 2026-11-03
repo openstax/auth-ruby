@@ -232,8 +232,14 @@ module OpenStax
         def recently_fetched?(jwks_uri)
           @lock.synchronize do
             fetched_at = @fetched_at[jwks_uri]
-            !fetched_at.nil? && now - fetched_at < @config.jwks_miss_ttl
+            !fetched_at.nil? && now - fetched_at < miss_ttl
           end
+        end
+
+        # Never throttle longer than keys live. Otherwise an expired key couldn't
+        # be refetched, and valid tokens would fail until the throttle ran out.
+        def miss_ttl
+          [@config.jwks_miss_ttl, @config.jwks_cache_ttl].min
         end
 
         def store(jwks_uri, keys)
@@ -252,7 +258,7 @@ module OpenStax
         def prune
           time = now
           @keys.delete_if { |_, (_, expires_at)| expires_at <= time }
-          @fetched_at.delete_if { |_, fetched_at| time - fetched_at >= @config.jwks_miss_ttl }
+          @fetched_at.delete_if { |_, fetched_at| time - fetched_at >= miss_ttl }
           # Still over the cap: keep the newest entries
           if @fetched_at.size > MAX_ENTRIES
             @fetched_at = @fetched_at.sort_by { |_, fetched_at| -fetched_at }.first(MAX_ENTRIES).to_h
