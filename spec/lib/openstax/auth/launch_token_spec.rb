@@ -192,6 +192,15 @@ RSpec.describe OpenStax::Auth::LaunchToken do
         expect(described_class.verify([header, payload, signature].join('.'))).to be_nil
       end
 
+      %w[null [] 42 "str" true].each do |raw_payload|
+        it "returns nil without fetching for a non-object payload (#{raw_payload})" do
+          header, _payload, signature = sign(claims).split('.')
+          payload = Base64.urlsafe_encode64(raw_payload, padding: false)
+          expect(described_class.verify([header, payload, signature].join('.'))).to be_nil
+          expect(described_class).not_to have_received(:fetch_jwks)
+        end
+      end
+
       it 'returns nil when the JWKS response is not valid JSON' do
         allow(described_class).to receive(:fetch_jwks) { described_class.parse_jwks('<html>') }
         expect(described_class.verify(sign(claims))).to be_nil

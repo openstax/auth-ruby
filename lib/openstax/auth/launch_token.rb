@@ -69,8 +69,15 @@ module OpenStax
         return nil unless configured?
         return nil unless token.is_a?(String) && COMPACT_JWS.match?(token)
 
-        header = JSON.parse(Base64.urlsafe_decode64(token.split('.').first))
+        encoded_header, encoded_payload, = token.split('.')
+        header = JSON.parse(Base64.urlsafe_decode64(encoded_header))
         return nil unless header.is_a?(Hash)
+
+        # json-jwt assumes an object payload (it calls with_indifferent_access
+        # before checking the signature), so reject anything else up front.
+        # This also avoids a JWKS fetch for junk input.
+        payload = JSON.parse(Base64.urlsafe_decode64(encoded_payload.to_s))
+        return nil unless payload.is_a?(Hash)
 
         alg = header['alg']
         kid = header['kid']
