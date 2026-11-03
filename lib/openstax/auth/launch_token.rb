@@ -242,9 +242,16 @@ module OpenStax
           [@config.jwks_miss_ttl, @config.jwks_cache_ttl].min
         end
 
+        # A non-empty fetch replaces the URI's whole key set, so keys retired
+        # from the JWKS stop being trusted at the next refresh. An empty result
+        # (error status, bad body) leaves cached keys alone, so a transient
+        # endpoint failure can't evict good keys.
         def store(jwks_uri, keys)
+          return if keys.empty?
+
           @lock.synchronize do
             expires_at = now + @config.jwks_cache_ttl
+            @keys.delete_if { |(uri, _), _| uri == jwks_uri }
             keys.each { |kid, jwk| @keys[[jwks_uri, kid]] = [jwk, expires_at] }
             prune if @keys.size > MAX_ENTRIES || @fetched_at.size > MAX_ENTRIES
           end

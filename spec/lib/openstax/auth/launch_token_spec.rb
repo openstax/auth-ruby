@@ -287,6 +287,26 @@ RSpec.describe OpenStax::Auth::LaunchToken do
         config.jwks_miss_ttl = original_miss_ttl
       end
 
+      it 'stops trusting a key that was removed from the JWKS at the next refresh' do
+        expect(described_class.verify(sign(claims))).to include('sub' => uuid)
+        advance(config.jwks_miss_ttl + 1)
+
+        # key-1 is retired and key-2 is added; a key-2 token triggers the refresh
+        jwks_keys.replace([public_jwk(OTHER_RSA_KEY, 'key-2')])
+        expect(described_class.verify(sign(claims, key: OTHER_RSA_KEY, kid: 'key-2'))).to include('sub' => uuid)
+        expect(described_class.verify(sign(claims))).to be_nil
+      end
+
+      it 'keeps cached keys when a refresh returns no keys' do
+        expect(described_class.verify(sign(claims))).to include('sub' => uuid)
+        advance(config.jwks_miss_ttl + 1)
+
+        jwks_keys.clear
+        expect(described_class.verify(sign(claims, kid: 'key-2'))).to be_nil
+        expect(described_class.verify(sign(claims))).to include('sub' => uuid)
+        expect(described_class).to have_received(:fetch_jwks).twice
+      end
+
       it 'maps issuer spellings to one canonical JWKS URI so they share the miss throttle' do
         [
           'https://user1@assignments.openstax.org',
